@@ -210,15 +210,23 @@ class LastLog(NukiEntity, SensorEntity):
 
     @property
     def state(self):
-        return self.coordinator.info_field(self.device_id, "Unknown", "last_log", "name")
+        return self.coordinator.info_field(self.device_id, "Unknown", "last_log", "action")
 
     @property
     def extra_state_attributes(self):
         timestamp = self.coordinator.info_field(self.device_id, None, "last_log", "timestamp")
-        action = self.coordinator.info_field(self.device_id, "unknown", "last_log", "action")
+        name = self.coordinator.info_field(self.device_id, "unknown", "last_log", "name")
+        device_type = self.coordinator.info_field(self.device_id, "unknown", "last_log", "device_type")
+        trigger = self.coordinator.info_field(self.device_id, "unknown", "last_log", "trigger")
+        state = self.coordinator.info_field(self.device_id, "unknown", "last_log", "state")
+        source = self.coordinator.info_field(self.device_id, "unknown", "last_log", "source")
         return {
             "timestamp": datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else None,
-            "action": action,
+            "name": name,
+            "device_type": device_type,
+            "trigger": trigger,
+            "state": state,
+            "source": source,
         }
 
     @property

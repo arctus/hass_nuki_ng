@@ -194,12 +194,32 @@ class NukiInterface:
         return True if self.token and self.bridge else False
 
     async def web_get_last_log(self, dev_id: str):
+        device_type_map = {
+            0: "smartlock_1_2",
+            1: "box",
+            2: "opener",
+            3: "smartdoor",
+            4: "smartlock 3/4"
+        }
         lock_actions_map = {
             1: "unlock",
             2: "lock",
             3: "unlatch",
             4: "lock_n_go",
             5: "lock_n_go_unlatch",
+            208: "door_warning",
+            209: "door_warning_status_mismatch",
+            224: "doorbell_recognition",
+            240: "door_opened",
+            241: "door_closed",
+            242: "door_jammed",
+            243: "firmware_update",
+            250: "door_log_enabled",
+            251: "door_log_disabled",
+            252: "initialization",
+            253: "calibration",
+            254: "activity_log_enabled",
+            255: "activity_lock_disabled"
         }
         device_actions_map = {
             0: lock_actions_map,
@@ -213,6 +233,37 @@ class NukiInterface:
             3: lock_actions_map,
             4: lock_actions_map,
         }
+        trigger_map = {
+            0: "system",
+            1: "manual",
+            2: "button",
+            3: "automatic",
+            4: "web",
+            5: "app",
+            6: "auto_lock",
+            7: "accessory",
+            255: "keypad"
+        }
+        state_map = {
+            0: "success",
+            1: "motor_blocked",
+            2: "cancelled",
+            3: "too_recent",
+            4: "busy",
+            5: "low_motor_voltage",
+            6: "clutch_failure",
+            7: "motor_power_failure",
+            8: "incomplete",
+            9: "rejected",
+            10: "rejected_night_mode",
+            254: "other_errors",
+            255: "unknown_error"
+        }
+        source_map = {
+            0: "default",
+            1: "keypad",
+            2: "fingerprint"
+        }
         device_actions_map[4] = device_actions_map[0]
         response = await self.web_async_json(
             lambda r, h: r.get(self.web_url(f"/smartlock/{dev_id}/log"), headers=h)
@@ -223,6 +274,10 @@ class NukiInterface:
             if item.get("action") in actions_map.keys():
                 return {
                     "name": item.get("name"),
+                    "device_type": device_type_map[item.get("deviceType")],
+                    "trigger": trigger_map[item.get("trigger")],
+                    "state": state_map[item.get("state")],
+                    "source": source_map[item.get("source")],
                     "action": actions_map[item["action"]],
                     "timestamp": item["date"].replace("Z", "+00:00"),
                 }
@@ -365,7 +420,7 @@ class NukiCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name=DOMAIN,
             update_method=self._make_update_method(),
-            update_interval=timedelta(seconds=config.get("update_seconds", 30)),
+            update_interval=timedelta(seconds=config.get("update_seconds", 10)),
         )
 
         hook_id = "%s_%s" % (BRIDGE_HOOK, entry.entry_id)

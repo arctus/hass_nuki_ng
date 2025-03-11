@@ -13,10 +13,24 @@ async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = entry.runtime_data
 
     if coordinator.api.can_bridge():
+        entities.append(NukiBridgeUpdateButton(coordinator))
         entities.append(NukiBridgeRestartButton(coordinator))
         entities.append(NukiBridgeFWUpdateButton(coordinator))
     async_add_entities(entities)
     return True
+
+class NukiBridgeUpdateButton(NukiBridge, ButtonEntity):
+    """Defines a Bridge update button."""
+
+    def __init__(self, coordinator):
+        super().__init__(coordinator)
+        self.set_id("update")
+        self.set_name("Update")
+        self._attr_device_class = ButtonDeviceClass.UPDATE
+        self._attr_entity_category = EntityCategory.CONFIG
+
+    async def async_press(self) -> None:
+        await self.coordinator.do_update()
 
 class NukiBridgeRestartButton(NukiBridge, ButtonEntity):
     """Defines a Bridge restart button."""

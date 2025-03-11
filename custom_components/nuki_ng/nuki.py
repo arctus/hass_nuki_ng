@@ -573,6 +573,12 @@ class NukiCoordinator(DataUpdateCoordinator):
             await self.async_request_refresh()
             _LOGGER.debug(f"web action result: {action}")
 
+    async def do_update(self):
+        if self.api.can_bridge():
+            await self._update()
+        else:
+            raise HomeAssistantError("Not supported")
+
     async def do_reboot(self):
         if self.api.can_bridge():
             await self.api.bridge_reboot()

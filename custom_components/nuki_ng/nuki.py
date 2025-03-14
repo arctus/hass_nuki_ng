@@ -67,7 +67,9 @@ class NukiInterface:
             to_hash = "%s,%s,%s" % (tz, rnr, self.token)
             hashed = sha256(to_hash.encode("utf-8")).hexdigest()
             return f"{url}{path}?ts={tz}&rnr={rnr}&hash={hashed}{extra_str}"
-        return f"{url}{path}?token={self.token}{extra_str}"
+        full_url = f"{url}{path}?token={self.token}{extra_str}"
+        _LOGGER.debug(f"url: {full_url}")
+        return full_url
 
     async def bridge_list(self):
         data = await self.async_json(lambda r: r.get(self.bridge_url("/list"), timeout=BRIDGE_TIMEOUT))
@@ -192,6 +194,14 @@ class NukiInterface:
 
     def can_bridge(self):
         return True if self.token and self.bridge else False
+
+    async def bridge_get_last_log(self):
+        response = await self.async_json(
+            lambda r: r.get(
+                self.bridge_url("/log"),
+                timeout=BRIDGE_TIMEOUT
+            ))
+        _LOGGER.debug(f"bridge_get_last_log: {response}")
 
     async def web_get_last_log(self, dev_id: str):
         device_type_map = {
@@ -420,7 +430,7 @@ class NukiCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name=DOMAIN,
             update_method=self._make_update_method(),
-            update_interval=timedelta(seconds=config.get("update_seconds", 10)),
+            update_interval=timedelta(seconds=config.get("update_seconds", 60)),
         )
 
         hook_id = "%s_%s" % (BRIDGE_HOOK, entry.entry_id)
@@ -574,10 +584,7 @@ class NukiCoordinator(DataUpdateCoordinator):
             _LOGGER.debug(f"web action result: {action}")
 
     async def do_update(self):
-        if self.api.can_bridge():
-            await self._update()
-        else:
-            raise HomeAssistantError("Not supported")
+        await self.async_request_refresh()
 
     async def do_reboot(self):
         if self.api.can_bridge():

@@ -30,8 +30,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
             entities.append(DoorSecurityState(coordinator, dev_id))
         if coordinator.info_field(dev_id, None, "last_log"):
             entities.append(LastLog(coordinator, dev_id))
-        if coordinator.info_field(dev_id, None, "last_unlock_log"):
-            entities.append(LastUnlockUser(coordinator, dev_id))
+        if coordinator.info_field(dev_id, None, "last_lock_unlock_log"):
+            entities.append(LastLockUnlockLog(coordinator, dev_id))
         
     async_add_entities(entities)
     return True
@@ -233,25 +233,31 @@ class LastLog(NukiEntity, SensorEntity):
     def entity_category(self):
         return EntityCategory.DIAGNOSTIC
 
-class LastUnlockUser(NukiEntity, SensorEntity):
+class LastLockUnlockLog(NukiEntity, SensorEntity):
 
     def __init__(self, coordinator, device_id):
         super().__init__(coordinator, device_id)
-        self.set_id("sensor", "last_unlock_user")
-        self.set_name("Last Unlock user")
+        self.set_id("sensor", "last_lock_unlock_log")
+        self.set_name("Last Lock Unlock Log")
         self._attr_icon = "mdi:account-lock-open"
 
     @property
     def state(self):
-        return self.coordinator.info_field(self.device_id, "Unknown", "last_unlock_log", "name")
+        return self.coordinator.info_field(self.device_id, "Unknown", "last_lock_unlock_log", "action")
 
     @property
     def extra_state_attributes(self):
-        timestamp = self.coordinator.info_field(self.device_id, None, "last_unlock_log", "timestamp")
-        action = self.coordinator.info_field(self.device_id, "unknown", "last_unlock_log", "action")
+        timestamp = self.coordinator.info_field(self.device_id, None, "last_lock_unlock_log", "timestamp")
+        name = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "name")
+        trigger = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "trigger")
+        state = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "state")
+        source = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "source")
         return {
             "timestamp": datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else None,
-            "action": action,
+            "name": name,
+            "trigger": trigger,
+            "state": state,
+            "source": source,
         }
 
     @property

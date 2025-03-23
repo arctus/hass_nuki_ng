@@ -293,21 +293,56 @@ class NukiInterface:
                 }
         return dict()
 
-    async def web_get_last_unlock_log(self, dev_id: str):
+    async def web_get_last_lock_unlock_log(self, dev_id: str):
         actions_map = {
             1: "unlock",
+            2: "lock",
             3: "unlatch",
+            4: "lock_n_go",
             5: "lock_n_go_unlatch",
+        }
+        trigger_map = {
+            0: "system",
+            1: "manual",
+            2: "button",
+            3: "automatic",
+            4: "web",
+            5: "app",
+            6: "auto_lock",
+            7: "accessory",
+            255: "keypad"
+        }
+        state_map = {
+            0: "success",
+            1: "motor_blocked",
+            2: "cancelled",
+            3: "too_recent",
+            4: "busy",
+            5: "low_motor_voltage",
+            6: "clutch_failure",
+            7: "motor_power_failure",
+            8: "incomplete",
+            9: "rejected",
+            10: "rejected_night_mode",
+            254: "other_errors",
+            255: "unknown_error"
+        }
+        source_map = {
+            0: "default",
+            1: "keypad",
+            2: "fingerprint"
         }
         response = await self.web_async_json(
             lambda r, h: r.get(self.web_url(f"/smartlock/{dev_id}/log"), headers=h)
         )
-        _LOGGER.debug(f"web_get_last_unlock_log ({dev_id}): {response}")
+        _LOGGER.debug(f"web_get_last_lock_unlock_log ({dev_id}): {response}")
         for item in response:
             if item.get("action") in actions_map.keys():
-                # unlock, unlatch, lock'n'go with unlatch
                 return {
                     "name": item.get("name"),
+                    "trigger": trigger_map[item.get("trigger")],
+                    "state": state_map[item.get("state")],
+                    "source": source_map[item.get("source")],
                     "action": actions_map[item["action"]],
                     "timestamp": item["date"].replace("Z", "+00:00"),
                 }
@@ -522,11 +557,11 @@ class NukiCoordinator(DataUpdateCoordinator):
                         _LOGGER.exception(f"Error while fetching auth: {err}")
                         item["web_auth"] = self.device_data(dev_id).get("web_auth", {})
                     try:
-                        item["last_unlock_log"] = await self.api.web_get_last_unlock_log(web_id)
+                        item["last_lock_unlock_log"] = await self.api.web_get_last_lock_unlock_log(web_id)
                     except HomeAssistantError as err:
                         _LOGGER.warning("Despite being configured, Web API request has failed")
-                        _LOGGER.exception(f"Error while fetching last unlock log entry: {err}")
-                        item["last_unlock_log"] = self.device_data(dev_id).get("last_unlock_log", {})
+                        _LOGGER.exception(f"Error while fetching last lock / unlock log entry: {err}")
+                        item["last_lock_unlock_log"] = self.device_data(dev_id).get("last_lock_unlock_log", {})
                     try:
                         item["last_log"] = await self.api.web_get_last_log(web_id)
                     except HomeAssistantError as err:

@@ -1,4 +1,4 @@
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.helpers.entity import EntityCategory
 
 import logging
@@ -28,10 +28,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if coordinator.device_supports(dev_id, "doorsensorStateName"):
             entities.append(DoorSensorState(coordinator, dev_id))
             entities.append(DoorSecurityState(coordinator, dev_id))
-        if coordinator.info_field(dev_id, None, "last_log"):
-            entities.append(LastLog(coordinator, dev_id))
-        if coordinator.info_field(dev_id, None, "last_lock_unlock_log"):
-            entities.append(LastLockUnlockLog(coordinator, dev_id))
+        if coordinator.info_field(dev_id, None, "web_last_update"):
+            entities.append(WebLastUpdate(coordinator, dev_id))
+        if coordinator.info_field(dev_id, None, "web_last_log"):
+            entities.append(WebLastLog(coordinator, dev_id))
+        if coordinator.info_field(dev_id, None, "web_last_lock_unlock_log"):
+            entities.append(WebLastLockUnlockLog(coordinator, dev_id))
         
     async_add_entities(entities)
     return True
@@ -200,26 +202,43 @@ class LockVersion(NukiEntity, SensorEntity):
     def entity_category(self):
         return EntityCategory.DIAGNOSTIC
 
-class LastLog(NukiEntity, SensorEntity):
+class WebLastUpdate(NukiEntity, SensorEntity):
 
     def __init__(self, coordinator, device_id):
         super().__init__(coordinator, device_id)
-        self.set_id("sensor", "last_log")
-        self.set_name("Last Log")
+        self.set_id("sensor", "web_last_update")
+        self.set_name("Web Last Update")
+        self._attr_icon = "mdi:history"
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    @property
+    def state(self):
+        return self.coordinator.info_field(self.device_id, "Unknown", "web_last_update")
+
+    @property
+    def entity_category(self):
+        return EntityCategory.DIAGNOSTIC
+
+class WebLastLog(NukiEntity, SensorEntity):
+
+    def __init__(self, coordinator, device_id):
+        super().__init__(coordinator, device_id)
+        self.set_id("sensor", "web_last_log")
+        self.set_name("Web Last Log")
         self._attr_icon = "mdi:history"
 
     @property
     def state(self):
-        return self.coordinator.info_field(self.device_id, "Unknown", "last_log", "action")
+        return self.coordinator.info_field(self.device_id, "Unknown", "web_last_log", "action")
 
     @property
     def extra_state_attributes(self):
-        timestamp = self.coordinator.info_field(self.device_id, None, "last_log", "timestamp")
-        name = self.coordinator.info_field(self.device_id, "unknown", "last_log", "name")
-        device_type = self.coordinator.info_field(self.device_id, "unknown", "last_log", "device_type")
-        trigger = self.coordinator.info_field(self.device_id, "unknown", "last_log", "trigger")
-        state = self.coordinator.info_field(self.device_id, "unknown", "last_log", "state")
-        source = self.coordinator.info_field(self.device_id, "unknown", "last_log", "source")
+        timestamp = self.coordinator.info_field(self.device_id, None, "web_last_log", "timestamp")
+        name = self.coordinator.info_field(self.device_id, "unknown", "web_last_log", "name")
+        device_type = self.coordinator.info_field(self.device_id, "unknown", "web_last_log", "device_type")
+        trigger = self.coordinator.info_field(self.device_id, "unknown", "web_last_log", "trigger")
+        state = self.coordinator.info_field(self.device_id, "unknown", "web_last_log", "state")
+        source = self.coordinator.info_field(self.device_id, "unknown", "web_last_log", "source")
         return {
             "timestamp": datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else None,
             "name": name,
@@ -233,25 +252,25 @@ class LastLog(NukiEntity, SensorEntity):
     def entity_category(self):
         return EntityCategory.DIAGNOSTIC
 
-class LastLockUnlockLog(NukiEntity, SensorEntity):
+class WebLastLockUnlockLog(NukiEntity, SensorEntity):
 
     def __init__(self, coordinator, device_id):
         super().__init__(coordinator, device_id)
-        self.set_id("sensor", "last_lock_unlock_log")
-        self.set_name("Last Lock Unlock Log")
+        self.set_id("sensor", "web_last_lock_unlock_log")
+        self.set_name("Web Last Lock Unlock Log")
         self._attr_icon = "mdi:account-lock-open"
 
     @property
     def state(self):
-        return self.coordinator.info_field(self.device_id, "Unknown", "last_lock_unlock_log", "action")
+        return self.coordinator.info_field(self.device_id, "Unknown", "web_last_lock_unlock_log", "action")
 
     @property
     def extra_state_attributes(self):
-        timestamp = self.coordinator.info_field(self.device_id, None, "last_lock_unlock_log", "timestamp")
-        name = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "name")
-        trigger = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "trigger")
-        state = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "state")
-        source = self.coordinator.info_field(self.device_id, "unknown", "last_lock_unlock_log", "source")
+        timestamp = self.coordinator.info_field(self.device_id, None, "web_last_lock_unlock_log", "timestamp")
+        name = self.coordinator.info_field(self.device_id, "unknown", "web_last_lock_unlock_log", "name")
+        trigger = self.coordinator.info_field(self.device_id, "unknown", "web_last_lock_unlock_log", "trigger")
+        state = self.coordinator.info_field(self.device_id, "unknown", "web_last_lock_unlock_log", "state")
+        source = self.coordinator.info_field(self.device_id, "unknown", "web_last_lock_unlock_log", "source")
         return {
             "timestamp": datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else None,
             "name": name,

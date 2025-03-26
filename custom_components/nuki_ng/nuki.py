@@ -501,7 +501,7 @@ class NukiCoordinator(DataUpdateCoordinator):
             async def _schedule_callback(_now):
                 last_state["ringactionState"] = False
                 self.async_set_updated_data(data)
-            async_call_later(self.hass, 5, _schedule_callback)    
+            async_call_later(self.hass, 5, _schedule_callback)
 
     async def _update(self):
         try:
@@ -557,21 +557,22 @@ class NukiCoordinator(DataUpdateCoordinator):
                         _LOGGER.exception(f"Error while fetching auth: {err}")
                         item["web_auth"] = self.device_data(dev_id).get("web_auth", {})
                     try:
-                        item["last_lock_unlock_log"] = await self.api.web_get_last_lock_unlock_log(web_id)
+                        item["web_last_lock_unlock_log"] = await self.api.web_get_last_lock_unlock_log(web_id)
                     except HomeAssistantError as err:
                         _LOGGER.warning("Despite being configured, Web API request has failed")
                         _LOGGER.exception(f"Error while fetching last lock / unlock log entry: {err}")
-                        item["last_lock_unlock_log"] = self.device_data(dev_id).get("last_lock_unlock_log", {})
+                        item["web_last_lock_unlock_log"] = self.device_data(dev_id).get("web_last_lock_unlock_log", {})
                     try:
-                        item["last_log"] = await self.api.web_get_last_log(web_id)
+                        item["web_last_log"] = await self.api.web_get_last_log(web_id)
                     except HomeAssistantError as err:
                         _LOGGER.warning("Despite being configured, Web API request has failed")
                         _LOGGER.exception(f"Error while fetching last log entry: {err}")
-                        item["last_log"] = self.device_data(dev_id).get("last_log", {})
+                        item["web_last_log"] = self.device_data(dev_id).get("web_last_log", {})
                 if web_list:
                     item["config"] = web_list.get(web_id, {}).get("config")
                     item["advancedConfig"] = web_list.get(web_id, {}).get("advancedConfig")
                     item["openerAdvancedConfig"] = web_list.get(web_id, {}).get("openerAdvancedConfig")
+                    item["web_last_update"] = web_list.get(web_id, {}).get("lastKnownState").get("timestamp")
                 result["devices"][dev_id] = item
                 result["devices"][dev_id]["bridge_info"] = info_mapping.get(dev_id)
             _LOGGER.debug(f"_update: {json.dumps(result)}")
